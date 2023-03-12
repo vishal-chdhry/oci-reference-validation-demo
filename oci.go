@@ -5,32 +5,32 @@ import (
 
 	"oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/registry/remote"
-	"oras.land/oras-go/v2/registry/remote/auth"
-	"oras.land/oras-go/v2/registry/remote/retry"
 )
 
 func ORAS_demo() error {
 	ctx := context.Background()
-	username := "username"
-	password := "password"
 
 	// Setting up local repository
-	reg := "example.registy.io"
-	repo, err := remote.NewRepository(reg + "/myrepo")
+	reg := "127.0.0.1:4400"
+	repo, err := remote.NewRepository(reg + "/hello-world")
 	if err != nil {
 		panic(err)
 	}
-	repo.Client = &auth.Client{
-		Client: retry.DefaultClient,
-		Cache:  auth.DefaultCache,
-		Credential: auth.StaticCredential(reg, auth.Credential{
-			Username: username,
-			Password: password,
-		}),
-	}
+
+	// // Authentication, if required
+	// username := "username"
+	// password := "password"
+	// repo.Client = &auth.Client{
+	// 	Client: retry.DefaultClient,
+	// 	Cache:  auth.DefaultCache,
+	// 	Credential: auth.StaticCredential(reg, auth.Credential{
+	// 		Username: username,
+	// 		Password: password,
+	// 	}),
+	// }
 
 	// Seting up source repository to pull from
-	src, err := remote.NewRepository(reg + "/source")
+	src, err := remote.NewRepository("ghcr.io/oci-playground/hello-world")
 	if err != nil {
 		panic(err)
 	}
