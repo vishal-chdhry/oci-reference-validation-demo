@@ -43,11 +43,19 @@ func ORAS_demo() error {
 
 	// Fetch using the digest
 	repoDescriptor, readCloser, err := oras.Fetch(ctx, repo, repoDescriptor.Digest.String(), oras.DefaultFetchOptions)
+	if err != nil {
+		panic(err)
+	}
 	readCloser.Close()
 
 	// Sign the image using notation
 
 	// Fetch the signed image using ORAS
+	repoDescriptor, readCloser, err = oras.Fetch(ctx, repo, repoDescriptor.Digest.String(), oras.DefaultFetchOptions)
+	if err != nil {
+		panic(err)
+	}
+	readCloser.Close()
 
 	// Verify that the image is signed properly using Local Verification
 	return err
