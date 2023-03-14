@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 
 	"oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/registry/remote"
@@ -35,9 +37,20 @@ func ORAS_demo() error {
 	fmt.Println("Manifest: ", buf.String())
 	readCloser.Close()
 
-	// Verify that the image is signed properly using Local Verification
-	fmt.Println("Verifing that the image is signed properly using Local Verification")
+	fmt.Println("Fetching the referrers of a manifest from registry")
+	referrersLink := "http://" + reg + "/v2/" + repo.Reference.Repository + "/referrers/" + repoDescriptor.Digest.String()
+	resp, err := http.Get(referrersLink)
+	if err != nil {
+		panic(err)
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	ref := string(body)
+	fmt.Println("Referrers:", ref)
 
+	fmt.Println("Verifing that the image is signed properly using Local Verification")
 	artifactReference := reg + "/" + repo.Reference.Repository + "@" + repoDescriptor.Digest.String()
 	fmt.Println(artifactReference)
 
