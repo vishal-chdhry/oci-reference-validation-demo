@@ -3,7 +3,6 @@ package oci
 import (
 	"bytes"
 	"context"
-	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -69,6 +68,11 @@ func ORAS_demo() error {
 
 	exampleRepo := registry.NewRepository(repo)
 
+	signatureEnvelope, _, err := exampleSigner.Sign(context.Background(), repoDescriptor, exampleSignOptions.SignOptions)
+	if err != nil {
+		panic(err)
+	}
+
 	targetDesc, err := notation.Sign(context.Background(), exampleSigner, exampleRepo, exampleSignOptions)
 	if err != nil {
 		panic(err)
@@ -108,8 +112,6 @@ func ORAS_demo() error {
 		},
 	}
 
-	signatureEnvelope := generateSignatureEnvelope(exampleCertTuple.PrivateKey)
-
 	verifyOptions := notation.VerifyOptions{
 		ArtifactReference:  artifactReference,
 		SignatureMediaType: exampleSignatureMediaType,
@@ -130,7 +132,6 @@ func ORAS_demo() error {
 	}
 
 	fmt.Println("Successfully verified")
-
 	fmt.Println("payload ContentType:", outcome.EnvelopeContent.Payload.ContentType)
 	fmt.Println("payload Content:", string(outcome.EnvelopeContent.Payload.Content))
 
@@ -141,17 +142,6 @@ func Fluxcd_demo() error {
 	return nil
 }
 
-func generateSignatureEnvelope(key *rsa.PrivateKey) []byte {
-	pemdata := pem.EncodeToMemory(
-		&pem.Block{
-			Type:  "SIGNATURE ENVELOPE",
-			Bytes: x509.MarshalPKCS1PrivateKey(key),
-		},
-	)
-	println(string(pemdata))
-	return pemdata
-}
-
 func createTrustStore(cert *x509.Certificate) error {
 	dir.UserConfigDir = "tmp"
 
@@ -159,7 +149,6 @@ func createTrustStore(cert *x509.Certificate) error {
 		Type:  "CERTIFICATE",
 		Bytes: cert.Raw,
 	})
-	println(string(pubBytes))
 
 	if err := os.MkdirAll("tmp/truststore/x509/ca/valid-trust-store", 0700); err != nil {
 		return err
