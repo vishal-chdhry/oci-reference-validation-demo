@@ -26,7 +26,8 @@ import (
 func ORAS_demo() error {
 	ctx := context.Background()
 
-	fmt.Println("Setting up local repository")
+	fmt.Println("\n-----Setting up local repository-----")
+	fmt.Println()
 	reg := "localhost:5000"
 	repo, err := remote.NewRepository(reg + "/lachie/net-monitor:v1")
 	if err != nil {
@@ -34,31 +35,42 @@ func ORAS_demo() error {
 	}
 
 	repo.PlainHTTP = true
-	fmt.Println("Repo: ", repo.Reference.Repository)
+	fmt.Println("Registry: ", repo.Reference.Registry)
+	fmt.Println("Repository: ", repo.Reference.Repository)
 	fmt.Println("Reference: ", repo.Reference.Reference)
 
-	fmt.Println("Fetching the repository from registry")
-	repoDescriptor, readCloser, err := oras.Fetch(ctx, repo, repo.Reference.Reference, oras.DefaultFetchOptions)
+	//
+	// Fetching the repository from registry
+	//
+	fmt.Println("\n-----Fetching the repository from registry-----")
+	fmt.Println()
+
+	repoDesc, artifactListIO, err := oras.Fetch(ctx, repo, repo.Reference.Reference, oras.DefaultFetchOptions)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Digest: ", repoDescriptor.Digest.String())
+	fmt.Println("Digest: ", repoDesc.Digest.String())
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(readCloser)
+	buf.ReadFrom(artifactListIO)
 	fmt.Println("Manifest: ", buf.String())
-	readCloser.Close()
-	artifactReference := reg + "/" + repo.Reference.Repository + "@" + repoDescriptor.Digest.String()
+	artifactListIO.Close()
 
+	artifactReference := reg + "/" + repo.Reference.Repository + "@" + repoDesc.Digest.String()
+
+	//
 	// Remote signing using notation
-	fmt.Println("Remote signing using notation")
-	exampleCertTuple := testhelper.GetRSASelfSignedSigningCertTuple("Notation Example self-signed")
-	exampleCerts := []*x509.Certificate{exampleCertTuple.Cert}
-	exampleSigner, err := signer.New(exampleCertTuple.PrivateKey, exampleCerts)
+	//
+	fmt.Println("\n-----Remote signing using notation-----")
+	fmt.Println()
+
+	certTuple := testhelper.GetRSASelfSignedSigningCertTuple("Notation Example self-signed")
+	certs := []*x509.Certificate{certTuple.Cert}
+	notationSigner, err := signer.New(certTuple.PrivateKey, certs)
 	if err != nil {
 		panic(err)
 	}
-	exampleSignatureMediaType := cose.MediaTypeEnvelope
 
+	exampleSignatureMediaType := cose.MediaTypeEnvelope
 	exampleSignOptions := notation.RemoteSignOptions{
 		SignOptions: notation.SignOptions{
 			ArtifactReference:  artifactReference,
@@ -66,14 +78,14 @@ func ORAS_demo() error {
 		},
 	}
 
-	exampleRepo := registry.NewRepository(repo)
+	notationRepo := registry.NewRepository(repo)
 
-	signatureEnvelope, _, err := exampleSigner.Sign(context.Background(), repoDescriptor, exampleSignOptions.SignOptions)
+	signatureEnvelope, _, err := notationSigner.Sign(ctx, repoDesc, exampleSignOptions.SignOptions)
 	if err != nil {
 		panic(err)
 	}
 
-	targetDesc, err := notation.Sign(context.Background(), exampleSigner, exampleRepo, exampleSignOptions)
+	targetDesc, err := notation.Sign(ctx, notationSigner, notationRepo, exampleSignOptions)
 	if err != nil {
 		panic(err)
 	}
@@ -83,8 +95,13 @@ func ORAS_demo() error {
 	fmt.Println("targetDesc Digest:", targetDesc.Digest)
 	fmt.Println("targetDesc Size:", targetDesc.Size)
 
-	fmt.Println("Fetching the referrers of a manifest from registry")
-	referrersLink := "http://" + reg + "/v2/" + repo.Reference.Repository + "/referrers/" + repoDescriptor.Digest.String()
+	//
+	// Fetching the referrers of a manifest from registry
+	//
+	fmt.Println("\n-----Fetching the referrers of a manifest from registry-----")
+	fmt.Println()
+
+	referrersLink := "http://" + reg + "/v2/" + repo.Reference.Repository + "/referrers/" + repoDesc.Digest.String()
 	resp, err := http.Get(referrersLink)
 	if err != nil {
 		panic(err)
@@ -96,7 +113,11 @@ func ORAS_demo() error {
 	ref := string(body)
 	fmt.Println("Referrers:", ref)
 
-	fmt.Println("Verifing that the image is signed properly using Local Verification")
+	//
+	// Verifing that the image is signed properly using Local Verification
+	//
+	fmt.Println("\n-----Verifing that the image is signed properly using Local Verification-----")
+	fmt.Println()
 	fmt.Println("Artifact Reference:", artifactReference)
 
 	policyDocument := trustpolicy.Document{
@@ -117,7 +138,7 @@ func ORAS_demo() error {
 		SignatureMediaType: exampleSignatureMediaType,
 	}
 
-	if err := createTrustStore(exampleCertTuple.Cert); err != nil {
+	if err := createTrustStore(certTuple.Cert); err != nil {
 		panic(err)
 	}
 
