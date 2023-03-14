@@ -58,7 +58,6 @@ func ORAS_demo() error {
 	if err != nil {
 		panic(err)
 	}
-	println(exampleCertTuple.PrivateKey)
 	exampleSignatureMediaType := cose.MediaTypeEnvelope
 
 	exampleSignOptions := notation.RemoteSignOptions{
@@ -101,7 +100,7 @@ func ORAS_demo() error {
 		TrustPolicies: []trustpolicy.TrustPolicy{
 			{
 				Name:                  "trust-policy",
-				RegistryScopes:        []string{"*"},
+				RegistryScopes:        []string{"localhost:5000/lachie/net-monitor"},
 				SignatureVerification: trustpolicy.SignatureVerification{VerificationLevel: trustpolicy.LevelStrict.Name},
 				TrustStores:           []string{"ca:valid-trust-store"},
 				TrustedIdentities:     []string{"*"},
@@ -125,7 +124,7 @@ func ORAS_demo() error {
 		panic(err)
 	}
 
-	outcome, err := notationVerifier.Verify(ctx, repoDescriptor, signatureEnvelope, verifyOptions)
+	outcome, err := notationVerifier.Verify(ctx, targetDesc, signatureEnvelope, verifyOptions)
 	if err != nil {
 		panic(err)
 	}
@@ -145,7 +144,7 @@ func Fluxcd_demo() error {
 func generateSignatureEnvelope(key *rsa.PrivateKey) []byte {
 	pemdata := pem.EncodeToMemory(
 		&pem.Block{
-			Type:  "EXAMPLE SIGNATURE ENVELOPE",
+			Type:  "SIGNATURE ENVELOPE",
 			Bytes: x509.MarshalPKCS1PrivateKey(key),
 		},
 	)
@@ -165,5 +164,5 @@ func createTrustStore(cert *x509.Certificate) error {
 	if err := os.MkdirAll("tmp/truststore/x509/ca/valid-trust-store", 0700); err != nil {
 		return err
 	}
-	return os.WriteFile("tmp/truststore/x509/ca/valid-trust-store/NotationLocalExample.pem", pubBytes, 0600)
+	return os.WriteFile("tmp/truststore/x509/ca/valid-trust-store/Notation.pem", pubBytes, 0600)
 }
