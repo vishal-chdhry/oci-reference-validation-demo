@@ -145,10 +145,11 @@ func Fluxcd_demo() error {
 func generateSignatureEnvelope(key *rsa.PrivateKey) []byte {
 	pemdata := pem.EncodeToMemory(
 		&pem.Block{
-			Type:  "RSA PRIVATE KEY",
+			Type:  "EXAMPLE SIGNATURE ENVELOPE",
 			Bytes: x509.MarshalPKCS1PrivateKey(key),
 		},
 	)
+	println(string(pemdata))
 	return pemdata
 }
 
@@ -156,9 +157,10 @@ func createTrustStore(cert *x509.Certificate) error {
 	dir.UserConfigDir = "tmp"
 
 	pubBytes := pem.EncodeToMemory(&pem.Block{
-		Type:  "RSA PUBLIC KEY",
+		Type:  "CERTIFICATE",
 		Bytes: cert.Raw,
 	})
+	println(string(pubBytes))
 
 	if err := os.MkdirAll("tmp/truststore/x509/ca/valid-trust-store", 0700); err != nil {
 		return err
