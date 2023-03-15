@@ -64,6 +64,7 @@ func ORAS_demo() error {
 
 	certTuple := testhelper.GetRSASelfSignedSigningCertTuple("Notation Example self-signed")
 	certs := []*x509.Certificate{certTuple.Cert}
+
 	notationSigner, err := signer.New(certTuple.PrivateKey, certs)
 	if err != nil {
 		panic(err)
@@ -92,6 +93,7 @@ func ORAS_demo() error {
 	//
 	// Fetching the referrers of a manifest from registry
 	//
+	// TODO: Change this implimentation to mimic the working of `oras discover`
 	fmt.Println("\n-----Fetching the referrers of a manifest from registry-----")
 	fmt.Println()
 
@@ -106,7 +108,7 @@ func ORAS_demo() error {
 		panic(err)
 	}
 	ref := string(body)
-	fmt.Println("Referrers:", ref)
+	fmt.Println("Referrers: ", ref)
 
 	//
 	// Verifing that the image is signed properly using Local Verification
@@ -155,6 +157,7 @@ func ORAS_demo() error {
 	//
 	// Adding a SBOM to the repository
 	//
+	// TODO: Add an example SBOM to the repistory, sign it and verify it.
 	fmt.Println("\n-----Adding a SBOM to the repository-----")
 
 	return err
