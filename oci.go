@@ -25,7 +25,6 @@ import (
 
 func ORAS_demo() error {
 	ctx := context.Background()
-
 	fmt.Println("\n-----Setting up local repository-----")
 	fmt.Println()
 	reg := "localhost:5000"
@@ -49,7 +48,7 @@ func ORAS_demo() error {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Digest: ", repoDesc.Digest.String())
+	fmt.Println("Manifest Desriptor: ", repoDesc)
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(artifactListIO)
 	fmt.Println("Manifest: ", buf.String())
@@ -80,11 +79,6 @@ func ORAS_demo() error {
 
 	notationRepo := registry.NewRepository(repo)
 
-	signatureEnvelope, _, err := notationSigner.Sign(ctx, repoDesc, exampleSignOptions.SignOptions)
-	if err != nil {
-		panic(err)
-	}
-
 	targetDesc, err := notation.Sign(ctx, notationSigner, notationRepo, exampleSignOptions)
 	if err != nil {
 		panic(err)
@@ -102,6 +96,7 @@ func ORAS_demo() error {
 	fmt.Println()
 
 	referrersLink := "http://" + reg + "/v2/" + repo.Reference.Repository + "/referrers/" + repoDesc.Digest.String()
+	fmt.Println("Referrers Link: ", referrersLink)
 	resp, err := http.Get(referrersLink)
 	if err != nil {
 		panic(err)
@@ -133,11 +128,6 @@ func ORAS_demo() error {
 		},
 	}
 
-	verifyOptions := notation.VerifyOptions{
-		ArtifactReference:  artifactReference,
-		SignatureMediaType: exampleSignatureMediaType,
-	}
-
 	if err := createTrustStore(certTuple.Cert); err != nil {
 		panic(err)
 	}
@@ -147,14 +137,25 @@ func ORAS_demo() error {
 		panic(err)
 	}
 
-	outcome, err := notationVerifier.Verify(ctx, targetDesc, signatureEnvelope, verifyOptions)
+	remoteVerifyOptions := notation.RemoteVerifyOptions{
+		ArtifactReference:    artifactReference,
+		MaxSignatureAttempts: 50,
+	}
+
+	targetDesc, _, err = notation.Verify(ctx, notationVerifier, notationRepo, remoteVerifyOptions)
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Println("Successfully verified")
-	fmt.Println("payload ContentType:", outcome.EnvelopeContent.Payload.ContentType)
-	fmt.Println("payload Content:", string(outcome.EnvelopeContent.Payload.Content))
+	fmt.Println("targetDesc MediaType:", targetDesc.MediaType)
+	fmt.Println("targetDesc Digest:", targetDesc.Digest)
+	fmt.Println("targetDesc Size:", targetDesc.Size)
+
+	//
+	// Adding a SBOM to the repository
+	//
+	fmt.Println("\n-----Adding a SBOM to the repository-----")
 
 	return err
 }
