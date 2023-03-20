@@ -22,3 +22,15 @@
    docker build -t $IMAGE https://github.com/wabbit-networks/net-monitor.git#main
    docker push $IMAGE
    ```
+4. Sign the image using notation
+   ```
+   notation sign $IMAGE
+   ```
+5. Add an SBOM to the image
+   ```
+   syft packages -q "$IMAGE" -o cyclonedx-json \                                                 
+   | regctl artifact put --subject "$IMAGE" \
+      --artifact-type application/vnd.cyclonedx+json \
+      -m application/vnd.cyclonedx+json \
+      --annotation "org.opencontainers.artifact.description=CycloneDX JSON SBOM"
+   ```
