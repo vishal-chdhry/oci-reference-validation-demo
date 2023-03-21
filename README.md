@@ -1,7 +1,8 @@
 ## Requirements
 
 - Docker
-- ORAS CLI
+- Notation CLI
+- Regctl CLI
 - Go 1.19+
 
 ## Setup
