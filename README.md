@@ -22,6 +22,12 @@
    docker build -t $IMAGE https://github.com/wabbit-networks/net-monitor.git#main
    docker push $IMAGE
    ```
+3. [OPTIONAL] If you haven't setup notation, follow these steps
+   Generate the certificate
+   ```
+   notation cert generate-test --default "regctl"
+   ```
+   Copy the regctl.crt file to `tmp/truststore/x509/ca/regctl/regctl.crt`
 4. Sign the image using notation
    ```
    notation sign --signature-format cose $IMAGE
