@@ -24,13 +24,21 @@
    ```
 4. Sign the image using notation
    ```
-   notation sign $IMAGE
+   notation sign --signature-format cose $IMAGE
    ```
 5. Add an SBOM to the image
    ```
-   syft packages -q "$IMAGE" -o cyclonedx-json \                                                 
+   syft packages -q "$IMAGE" -o cyclonedx-json \
    | regctl artifact put --subject "$IMAGE" \
       --artifact-type application/vnd.cyclonedx+json \
       -m application/vnd.cyclonedx+json \
       --annotation "org.opencontainers.artifact.description=CycloneDX JSON SBOM"
+   ```
+6. Find the digest of the SBOM
+   ```
+   regctl artifact list $IMAGE
+   ```
+7. Sign the SBOM attached to the image 
+   ```
+   notation sign --signature-format cose ${REPO}@<DIGEST-OF-THE-SBOM> 
    ```
