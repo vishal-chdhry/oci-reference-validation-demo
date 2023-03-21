@@ -22,7 +22,7 @@
    docker build -t $IMAGE https://github.com/wabbit-networks/net-monitor.git#main
    docker push $IMAGE
    ```
-3. *[OPTIONAL]* If you haven't setup notation, follow these steps
+3. *OPTIONAL:* If you haven't setup notation, follow these steps
    - Generate the certificate
      ```
      notation cert generate-test --default "regctl"
