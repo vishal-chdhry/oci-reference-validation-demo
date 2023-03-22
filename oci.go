@@ -96,7 +96,7 @@ func RegClient_Demo(repo_name string, cert string, artifactType string) error {
 		},
 	}
 
-	if err := generateTrustStore(); err != nil {
+	if err := createTrustStore(cert); err != nil {
 		panic(err)
 	}
 
@@ -161,34 +161,4 @@ func createTrustStore(cert string) error {
 		return err
 	}
 	return os.WriteFile("tmp/truststore/x509/ca/regctl/regclient.crt", []byte(cert), 0600)
-}
-
-func generateTrustStore() error {
-	dir.UserConfigDir = "tmp"
-	exampleX509Certificate := `-----BEGIN CERTIFICATE-----
-MIIDPzCCAiegAwIBAgICAKgwDQYJKoZIhvcNAQELBQAwTjELMAkGA1UEBhMCVVMx
-CzAJBgNVBAgTAldBMRAwDgYDVQQHEwdTZWF0dGxlMQ8wDQYDVQQKEwZOb3Rhcnkx
-DzANBgNVBAMTBnJlZ2N0bDAeFw0yMzAzMjExNDA2NDhaFw0yMzAzMjIxNDA2NDha
-ME4xCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJXQTEQMA4GA1UEBxMHU2VhdHRsZTEP
-MA0GA1UEChMGTm90YXJ5MQ8wDQYDVQQDEwZyZWdjdGwwggEiMA0GCSqGSIb3DQEB
-AQUAA4IBDwAwggEKAoIBAQCXSp/2i0OCWITNvl4ZzHxPsoJboJ6Z7sFYDJcEBuhL
-vpu/M3QPfPeBIMEBFaz+dFFuYapThWoqAGOBLbYWR8a67enVA2alxb+tw/WaBh3j
-FE0OZcBCNpYS9cLlabvz3a7cqSiEwo80bMkVZebyoG95nn+fbYZMBZ1kGdMj1DTz
-oP2x88hUcsAp6X16Ft/WObvIfjzzcDO1G+mzy640aB4EFY8DGjEeLPNipNBz7R6s
-VKvgBbFvq2PiLJSWJCDxE0NhJmtQ+8WkkKNBO+0kWm7OEF7K0c7MZMnP4ryppNXW
-uCL4b7dnw1xnhCmW+kgA4O/7ty//4ujtt+y3ixKLOquNAgMBAAGjJzAlMA4GA1Ud
-DwEB/wQEAwIHgDATBgNVHSUEDDAKBggrBgEFBQcDAzANBgkqhkiG9w0BAQsFAAOC
-AQEAN73sjy1EiIak4rvnHfsTw+C48Vvq30QOtfAI5oAmK/dtWn8XdADs8ED4p006
-EPEgENM3VcQliTsEqcXcfD3AsovIzEoDBmQRMNMM3VXwTkkiX3Fj94e3EyiYblFq
-1phRSNJqKvunPoJTvp8uVe3tneuebzBStIcIWs+nbbwvjY5YsGJPHVi0DXLqXOXI
-Fj6QtMkOBOcY6TOrYYp2dlxNSL/gseFSFbHRDezr10FRdR618VHVsUK+jdra/yq3
-jfDAvxznLLz83LtbnPQrVC+UHFfKCghlgoddnxzkd1NqZdp33tG8XWLpbTzXwZBc
-V4bGrIDNf8PSkOkRygkfNM9spw==
------END CERTIFICATE-----`
-
-	// Adding the certificate into the trust store.
-	if err := os.MkdirAll("tmp/truststore/x509/ca/valid-trust-store", 0700); err != nil {
-		return err
-	}
-	return os.WriteFile("tmp/truststore/x509/ca/valid-trust-store/NotationExample.pem", []byte(exampleX509Certificate), 0600)
 }
