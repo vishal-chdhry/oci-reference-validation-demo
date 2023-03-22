@@ -1,8 +1,6 @@
 package main
 
-import "testing"
-
-func Test_RegClient_demo(t *testing.T) {
+func main() {
 	certificate := `-----BEGIN CERTIFICATE-----
 MIIDPzCCAiegAwIBAgICAKgwDQYJKoZIhvcNAQELBQAwTjELMAkGA1UEBhMCVVMx
 CzAJBgNVBAgTAldBMRAwDgYDVQQHEwdTZWF0dGxlMQ8wDQYDVQQKEwZOb3Rhcnkx
@@ -23,8 +21,7 @@ Fj6QtMkOBOcY6TOrYYp2dlxNSL/gseFSFbHRDezr10FRdR618VHVsUK+jdra/yq3
 jfDAvxznLLz83LtbnPQrVC+UHFfKCghlgoddnxzkd1NqZdp33tG8XWLpbTzXwZBc
 V4bGrIDNf8PSkOkRygkfNM9spw==
 -----END CERTIFICATE-----`
-
-	repo_name := "localhost:5000/lachie/net-monitor"
+	repo_name := "localhost:5000/lachie/net-monitor:v1"
 
 	artifact_type := "application/vnd.cyclonedx+json"
 	RegClient_Demo(repo_name, certificate, artifact_type)

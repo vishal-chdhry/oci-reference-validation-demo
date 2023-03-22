@@ -1,195 +1,42 @@
-package oci
+package main
 
 import (
-	"bytes"
 	"context"
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
 
-	"github.com/notaryproject/notation-core-go/signature/cose"
-	"github.com/notaryproject/notation-core-go/testhelper"
 	"github.com/notaryproject/notation-go"
 	"github.com/notaryproject/notation-go/dir"
 	"github.com/notaryproject/notation-go/registry"
-	"github.com/notaryproject/notation-go/signer"
 	"github.com/notaryproject/notation-go/verifier"
 	"github.com/notaryproject/notation-go/verifier/trustpolicy"
 	"github.com/notaryproject/notation-go/verifier/truststore"
 	"github.com/regclient/regclient"
 	"github.com/regclient/regclient/config"
 	"github.com/regclient/regclient/types/ref"
-	"oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/registry/remote"
 )
 
-func ORAS_demo() error {
+func RegClient_Demo(repo_name string, cert string, artifactType string) error {
 	ctx := context.Background()
 	fmt.Println("\n-----Setting up local repository-----")
 	fmt.Println()
-	reg := "localhost:5000"
-	repo, err := remote.NewRepository(reg + "/lachie/net-monitor:v1")
+	repoReferrers, err := ref.New(repo_name)
 	if err != nil {
 		panic(err)
 	}
 
-	repo.PlainHTTP = true
-	fmt.Println("Registry: ", repo.Reference.Registry)
-	fmt.Println("Repository: ", repo.Reference.Repository)
-	fmt.Println("Reference: ", repo.Reference.Reference)
-
-	//
-	// Fetching the repository from registry
-	//
-	fmt.Println("\n-----Fetching the repository from registry-----")
-	fmt.Println()
-
-	repoDesc, artifactListIO, err := oras.Fetch(ctx, repo, repo.Reference.Reference, oras.DefaultFetchOptions)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("Manifest Desriptor: ", repoDesc)
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(artifactListIO)
-	fmt.Println("Manifest: ", buf.String())
-	artifactListIO.Close()
-
-	artifactReference := reg + "/" + repo.Reference.Repository + "@" + repoDesc.Digest.String()
-
-	//
-	// Remote signing using notation
-	//
-	fmt.Println("\n-----Remote signing using notation-----")
-	fmt.Println()
-
-	certTuple := testhelper.GetRSASelfSignedSigningCertTuple("Notation Example self-signed")
-	certs := []*x509.Certificate{certTuple.Cert}
-
-	notationSigner, err := signer.New(certTuple.PrivateKey, certs)
-	if err != nil {
-		panic(err)
-	}
-
-	exampleSignatureMediaType := cose.MediaTypeEnvelope
-	exampleSignOptions := notation.RemoteSignOptions{
-		SignOptions: notation.SignOptions{
-			ArtifactReference:  artifactReference,
-			SignatureMediaType: exampleSignatureMediaType,
-		},
-	}
-
-	notationRepo := registry.NewRepository(repo)
-
-	targetDesc, err := notation.Sign(ctx, notationSigner, notationRepo, exampleSignOptions)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println("Successfully signed")
-	fmt.Println("targetDesc MediaType:", targetDesc.MediaType)
-	fmt.Println("targetDesc Digest:", targetDesc.Digest)
-	fmt.Println("targetDesc Size:", targetDesc.Size)
-
-	//
-	// Fetching the referrers of a manifest from registry
-	//
-	// TODO: Change this implimentation to mimic the working of `oras discover`
-	fmt.Println("\n-----Fetching the referrers of a manifest from registry-----")
-	fmt.Println()
-
-	// refs, err := graph.Referrers(ctx, repo, repoDesc, "")
-
-	fmt.Println(targetDesc.Annotations)
-	referrersLink := "http://" + reg + "/v2/" + repo.Reference.Repository + "/referrers/" + repoDesc.Digest.String()
-	fmt.Println("Referrers Link: ", referrersLink)
-	resp, err := http.Get(referrersLink)
-	if err != nil {
-		panic(err)
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
-	}
-	ref := string(body)
-	fmt.Println("Referrers: ", ref)
-
-	//
-	// Verifing that the image is signed properly using Local Verification
-	//
-	fmt.Println("\n-----Verifing that the image is signed properly using Local Verification-----")
-	fmt.Println()
-	fmt.Println("Artifact Reference:", artifactReference)
-
-	policyDocument := trustpolicy.Document{
-		Version: "1.0",
-		TrustPolicies: []trustpolicy.TrustPolicy{
-			{
-				Name:                  "trust-policy",
-				RegistryScopes:        []string{"localhost:5000/lachie/net-monitor"},
-				SignatureVerification: trustpolicy.SignatureVerification{VerificationLevel: trustpolicy.LevelStrict.Name},
-				TrustStores:           []string{"ca:valid-trust-store"},
-				TrustedIdentities:     []string{"*"},
-			},
-		},
-	}
-
-	if err := createTrustStore(certTuple.Cert); err != nil {
-		panic(err)
-	}
-
-	notationVerifier, err := verifier.New(&policyDocument, truststore.NewX509TrustStore(dir.ConfigFS()), nil)
-	if err != nil {
-		panic(err)
-	}
-
-	remoteVerifyOptions := notation.RemoteVerifyOptions{
-		ArtifactReference:    artifactReference,
-		MaxSignatureAttempts: 50,
-	}
-
-	targetDesc, _, err = notation.Verify(ctx, notationVerifier, notationRepo, remoteVerifyOptions)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println("Successfully verified")
-	fmt.Println("targetDesc MediaType:", targetDesc.MediaType)
-	fmt.Println("targetDesc Digest:", targetDesc.Digest)
-	fmt.Println("targetDesc Size:", targetDesc.Size)
-
-	//
-	// Adding a SBOM to the repository
-	//
-	// TODO: Add an example SBOM to the repistory, sign it and verify it.
-	fmt.Println("\n-----Adding a SBOM to the repository-----")
-
-	return err
-}
-
-func RegClient_Demo() error {
-	ctx := context.Background()
-	fmt.Println("\n-----Setting up local repository-----")
-	fmt.Println()
-	regName := "localhost:5000"
+	fmt.Println("Registry: ", repoReferrers.Registry)
+	fmt.Println("Repository: ", repoReferrers.Repository)
+	fmt.Println("Reference: ", repoReferrers.Reference)
 
 	clientHost := config.Host{
-		Name:     regName,
-		Hostname: regName,
+		Name:     repoReferrers.Registry,
+		Hostname: repoReferrers.Registry,
 		TLS:      config.TLSDisabled,
 	}
 
 	client := regclient.New(regclient.WithConfigHost(clientHost))
-
-	repoReferrers, err := ref.New(regName + "/lachie/net-monitor:v1")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("Registry: ", repoReferrers.Registry)
-	fmt.Println("Repository: ", repoReferrers.Repository)
-	fmt.Println("Reference: ", repoReferrers.Reference)
 
 	//
 	// Fetching the repository from registry
@@ -229,7 +76,7 @@ func RegClient_Demo() error {
 	fmt.Println()
 	fmt.Println("Artifact Reference:", artifactReference)
 
-	repo, err := remote.NewRepository(regName + "/lachie/net-monitor")
+	repo, err := remote.NewRepository(repo_name)
 	if err != nil {
 		panic(err)
 	}
@@ -240,15 +87,18 @@ func RegClient_Demo() error {
 		Version: "1.0",
 		TrustPolicies: []trustpolicy.TrustPolicy{
 			{
-				Name:                  "trust-policy",
+				Name:                  "test-statement-name",
 				RegistryScopes:        []string{"*"},
 				SignatureVerification: trustpolicy.SignatureVerification{VerificationLevel: trustpolicy.LevelStrict.Name},
-				TrustStores:           []string{"ca:regctl"},
+				TrustStores:           []string{"ca:valid-trust-store"},
 				TrustedIdentities:     []string{"*"},
 			},
 		},
 	}
-	dir.UserConfigDir = "tmp"
+
+	if err := generateTrustStore(); err != nil {
+		panic(err)
+	}
 
 	notationVerifier, err := verifier.New(&policyDocument, truststore.NewX509TrustStore(dir.ConfigFS()), nil)
 	if err != nil {
@@ -279,7 +129,7 @@ func RegClient_Demo() error {
 	descs := repoRefs.Descriptors
 	sbomDig := ""
 	for _, v := range descs {
-		if v.Annotations["org.opencontainers.artifact.description"] == "CycloneDX JSON SBOM" {
+		if v.ArtifactType == artifactType {
 			fmt.Println(v)
 			sbomDig = v.Digest.String()
 		}
@@ -304,16 +154,41 @@ func RegClient_Demo() error {
 	return err
 }
 
-func createTrustStore(cert *x509.Certificate) error {
+func createTrustStore(cert string) error {
 	dir.UserConfigDir = "tmp"
 
-	pubBytes := pem.EncodeToMemory(&pem.Block{
-		Type:  "CERTIFICATE",
-		Bytes: cert.Raw,
-	})
+	if err := os.MkdirAll("tmp/truststore/x509/ca/regctl", 0700); err != nil {
+		return err
+	}
+	return os.WriteFile("tmp/truststore/x509/ca/regctl/regclient.crt", []byte(cert), 0600)
+}
 
+func generateTrustStore() error {
+	dir.UserConfigDir = "tmp"
+	exampleX509Certificate := `-----BEGIN CERTIFICATE-----
+MIIDPzCCAiegAwIBAgICAKgwDQYJKoZIhvcNAQELBQAwTjELMAkGA1UEBhMCVVMx
+CzAJBgNVBAgTAldBMRAwDgYDVQQHEwdTZWF0dGxlMQ8wDQYDVQQKEwZOb3Rhcnkx
+DzANBgNVBAMTBnJlZ2N0bDAeFw0yMzAzMjExNDA2NDhaFw0yMzAzMjIxNDA2NDha
+ME4xCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJXQTEQMA4GA1UEBxMHU2VhdHRsZTEP
+MA0GA1UEChMGTm90YXJ5MQ8wDQYDVQQDEwZyZWdjdGwwggEiMA0GCSqGSIb3DQEB
+AQUAA4IBDwAwggEKAoIBAQCXSp/2i0OCWITNvl4ZzHxPsoJboJ6Z7sFYDJcEBuhL
+vpu/M3QPfPeBIMEBFaz+dFFuYapThWoqAGOBLbYWR8a67enVA2alxb+tw/WaBh3j
+FE0OZcBCNpYS9cLlabvz3a7cqSiEwo80bMkVZebyoG95nn+fbYZMBZ1kGdMj1DTz
+oP2x88hUcsAp6X16Ft/WObvIfjzzcDO1G+mzy640aB4EFY8DGjEeLPNipNBz7R6s
+VKvgBbFvq2PiLJSWJCDxE0NhJmtQ+8WkkKNBO+0kWm7OEF7K0c7MZMnP4ryppNXW
+uCL4b7dnw1xnhCmW+kgA4O/7ty//4ujtt+y3ixKLOquNAgMBAAGjJzAlMA4GA1Ud
+DwEB/wQEAwIHgDATBgNVHSUEDDAKBggrBgEFBQcDAzANBgkqhkiG9w0BAQsFAAOC
+AQEAN73sjy1EiIak4rvnHfsTw+C48Vvq30QOtfAI5oAmK/dtWn8XdADs8ED4p006
+EPEgENM3VcQliTsEqcXcfD3AsovIzEoDBmQRMNMM3VXwTkkiX3Fj94e3EyiYblFq
+1phRSNJqKvunPoJTvp8uVe3tneuebzBStIcIWs+nbbwvjY5YsGJPHVi0DXLqXOXI
+Fj6QtMkOBOcY6TOrYYp2dlxNSL/gseFSFbHRDezr10FRdR618VHVsUK+jdra/yq3
+jfDAvxznLLz83LtbnPQrVC+UHFfKCghlgoddnxzkd1NqZdp33tG8XWLpbTzXwZBc
+V4bGrIDNf8PSkOkRygkfNM9spw==
+-----END CERTIFICATE-----`
+
+	// Adding the certificate into the trust store.
 	if err := os.MkdirAll("tmp/truststore/x509/ca/valid-trust-store", 0700); err != nil {
 		return err
 	}
-	return os.WriteFile("tmp/truststore/x509/ca/valid-trust-store/Notation.pem", pubBytes, 0600)
+	return os.WriteFile("tmp/truststore/x509/ca/valid-trust-store/NotationExample.pem", []byte(exampleX509Certificate), 0600)
 }
