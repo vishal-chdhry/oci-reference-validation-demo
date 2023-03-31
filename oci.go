@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
@@ -160,7 +161,6 @@ func ORAS_demo() error {
 	//
 	// Adding a SBOM to the repository
 	//
-	// TODO: Add an example SBOM to the repistory, sign it and verify it.
 	fmt.Println("\n-----Adding a SBOM to the repository-----")
 
 	return err
@@ -214,6 +214,7 @@ func RegClient_Demo(repo_name string, cert string, artifactType string) error {
 		panic(err)
 	}
 	fmt.Println(string(op))
+	fmt.Println(repoRefs.Descriptors[0])
 
 	repoDig := repoManifest.GetDescriptor().Digest.String()
 	artifactReference := repoReferrers.Registry + "/" + repoReferrers.Repository + "@" + repoDig
@@ -299,6 +300,34 @@ func RegClient_Demo(repo_name string, cert string, artifactType string) error {
 	fmt.Println("targetDesc MediaType:", targetDesc.MediaType)
 	fmt.Println("targetDesc Digest:", targetDesc.Digest)
 	fmt.Println("targetDesc Size:", targetDesc.Size)
+
+	fmt.Println("\n-----Fetching the manifest of the attached artifacts and creating a statement-----")
+	fmt.Println()
+
+	repoRefer, err := ref.New(repoReferrers.Registry + "/" + repoReferrers.Repository + "@" + targetDesc.Digest.String())
+	if err != nil {
+		panic(err)
+	}
+
+	repoManifest, err = client.ManifestGet(ctx, repoRefer)
+	if err != nil {
+		panic(err)
+	}
+	maniBytes, err := repoManifest.RawBody()
+
+	data := make(map[string]interface{})
+	if err := json.Unmarshal(maniBytes, &data); err != nil {
+		panic(err)
+	}
+	fmt.Println()
+	fmt.Println(data)
+
+	// rdr, err := client.BlobGet(ctx, repoRefer, repoRefs.Descriptors[0])
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer rdr.Close()
+	// io.Copy(os.Stdout, rdr)
 
 	return err
 }
