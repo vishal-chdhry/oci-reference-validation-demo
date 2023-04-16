@@ -9,6 +9,8 @@ import (
 
 	flux_client "github.com/fluxcd/pkg/oci/client"
 	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/google/go-containerregistry/pkg/name"
+	gcr_remote "github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/need-being/go-tree"
 	"github.com/notaryproject/notation-go"
 	"github.com/notaryproject/notation-go/dir"
@@ -571,6 +573,56 @@ func AzureRegClient_Demo() error {
 	fmt.Println(string(op))
 
 	return err
+}
+
+func GCRCrane_Demo() error {
+	repo_name := "jimnotarytest.azurecr.io/jim/net-monitor:v1"
+	artifact_type := "application/vnd.cyclonedx+json"
+	// ctx := context.Background()
+
+	reference, err := name.ParseReference(repo_name)
+	if err != nil {
+		panic(err)
+	}
+
+	desc, err := crane.Head(repo_name)
+	if err != nil {
+		panic(err)
+	}
+
+	manifestBytes, err := crane.Manifest(repo_name)
+	if err != nil {
+		panic(err)
+	}
+
+	var manifest ocispec.Manifest
+	if err := json.Unmarshal(manifestBytes, &manifest); err != nil {
+		panic(err)
+	}
+	fmt.Println(manifest)
+
+	ref, err := gcr_remote.Referrers(reference.Context().Digest(desc.Digest.String()))
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("ref:", ref)
+	for _, manifest := range ref.Manifests {
+		fmt.Println(manifest.Digest.String())
+		if manifest.ArtifactType == artifact_type {
+			ref := reference.Context().RepositoryStr() + "@" + manifest.Digest.String()
+			reference, err := name.ParseReference(ref)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Println(reference)
+			img, err := gcr_remote.Image(reference)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Println(img.MediaType())
+		}
+	}
+	return nil
 }
 
 func createTrustStore(cert string) error {

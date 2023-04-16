@@ -89,3 +89,7 @@ nzICwOuaH2VDTmW0kSl6KRN7vD6iXRxgFon9DbGO
 func Test_Azure_demo(t *testing.T) {
 	AzureRegClient_Demo()
 }
+
+func Test_GCRCrane_demo(t *testing.T) {
+	GCRCrane_Demo()
+}
