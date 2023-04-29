@@ -136,3 +136,7 @@ func v1ToOciSpecDescriptor(v1desc v1.Descriptor) ocispec.Descriptor {
 	}
 	return ociDesc
 }
+
+func (c *repositoryClient) getReferenceFromDescriptor(desc ocispec.Descriptor) string {
+	return c.ref.Context().RegistryStr() + "/" + c.ref.Context().RepositoryStr() + "@" + desc.Digest.String()
+}
