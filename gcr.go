@@ -31,7 +31,12 @@ func GCRCrane() error {
 		panic(err)
 	}
 
-	for _, descriptor := range ref.Manifests {
+	refDescs, err := ref.IndexManifest()
+	if err != nil {
+		panic(err)
+	}
+
+	for _, descriptor := range refDescs.Manifests {
 		fmt.Println("Digest:", descriptor.Digest.String())
 		fmt.Println("Artifact Type:", descriptor.ArtifactType)
 		if descriptor.ArtifactType == artifact_type {
