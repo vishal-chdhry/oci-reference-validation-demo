@@ -94,3 +94,7 @@ func (c *repositoryClient) FetchSignatureBlob(ctx context.Context, desc ocispec.
 func (c *repositoryClient) PushSignature(ctx context.Context, mediaType string, blob []byte, subject ocispec.Descriptor, annotations map[string]string) (blobDesc, manifestDesc ocispec.Descriptor, err error) {
 	return ocispec.Descriptor{}, ocispec.Descriptor{}, fmt.Errorf("push signature is not implemented")
 }
+
+func (c *repositoryClient) getReferenceFromDescriptor(desc ocispec.Descriptor) string {
+	return c.ref.Context().RegistryStr() + "/" + c.ref.Context().RepositoryStr() + "@" + desc.Digest.String()
+}

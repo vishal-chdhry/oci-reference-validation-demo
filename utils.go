@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/google/go-containerregistry/pkg/crane"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	gcrremote "github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/need-being/go-tree"
 	"github.com/notaryproject/notation-go/dir"
 	"oras.land/oras-go/v2"
@@ -137,6 +139,20 @@ func v1ToOciSpecDescriptor(v1desc v1.Descriptor) ocispec.Descriptor {
 	return ociDesc
 }
 
-func (c *repositoryClient) getReferenceFromDescriptor(desc ocispec.Descriptor) string {
-	return c.ref.Context().RegistryStr() + "/" + c.ref.Context().RepositoryStr() + "@" + desc.Digest.String()
+func getGCROpts() ([]gcrremote.Option, crane.Option, error) {
+	remoteOpts := []gcrremote.Option{}
+	var craneOpts crane.Option
+	pusher, err := gcrremote.NewPusher(remoteOpts...)
+	if err != nil {
+		return remoteOpts, craneOpts, err
+	}
+	remoteOpts = append(remoteOpts, gcrremote.Reuse(pusher))
+
+	puller, err := gcrremote.NewPuller(remoteOpts...)
+	if err != nil {
+		return remoteOpts, craneOpts, err
+	}
+	remoteOpts = append(remoteOpts, gcrremote.Reuse(puller))
+
+	return remoteOpts, craneOpts, err
 }
