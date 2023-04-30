@@ -183,6 +183,9 @@ func Flux(repo_name string, cert string, artifactType string) error {
 		panic(err)
 	}
 	maniBytes, err := repoManifest.RawBody()
+	if err != nil {
+		panic(err)
+	}
 
 	data := make(map[string]interface{})
 	if err := json.Unmarshal(maniBytes, &data); err != nil {

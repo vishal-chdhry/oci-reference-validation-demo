@@ -11,11 +11,9 @@ import (
 	gcr_remote "github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/notaryproject/notation-go"
 	"github.com/notaryproject/notation-go/dir"
-	"github.com/notaryproject/notation-go/registry"
 	"github.com/notaryproject/notation-go/verifier"
 	"github.com/notaryproject/notation-go/verifier/trustpolicy"
 	"github.com/notaryproject/notation-go/verifier/truststore"
-	"oras.land/oras-go/v2/registry/remote"
 
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 )
@@ -102,17 +100,17 @@ func GCRCrane(repo string, certificate string, artifact_type string) error {
 	artifact_reference := reference.Context().RegistryStr() + "/" + reference.Context().RepositoryStr() + "@" + desc.Digest.String()
 	fmt.Println("Artifact Reference:", artifact_reference)
 
-	// remoteOpts, craneOpts, err := getGCROpts()
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// notationRepo := NewRepository(craneOpts, remoteOpts, reference)
-
-	repo_oras, err := remote.NewRepository(repo)
+	remoteOpts, craneOpts, err := getGCROpts()
 	if err != nil {
 		panic(err)
 	}
-	notationRepo := registry.NewRepository(repo_oras)
+	notationRepo := NewRepository(craneOpts, remoteOpts, reference)
+
+	// repo_oras, err := remote.NewRepository(repo)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// notationRepo := registry.NewRepository(repo_oras)
 
 	policyDocument := trustpolicy.Document{
 		Version: "1.0",

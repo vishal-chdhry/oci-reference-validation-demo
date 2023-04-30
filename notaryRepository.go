@@ -28,15 +28,18 @@ func NewRepository(craneOpts crane.Option, remoteOpts []remote.Option, ref name.
 }
 
 func (c *repositoryClient) Resolve(ctx context.Context, reference string) (ocispec.Descriptor, error) {
+	fmt.Println("NotationRepository.Resolve BEGIN", reference)
 	head, err := crane.Head(reference)
 	if err != nil {
 		return ocispec.Descriptor{}, nil
 	}
 	descriptor := v1ToOciSpecDescriptor(*head)
+	fmt.Println("NotationRepository.resolve END", descriptor)
 	return descriptor, nil
 }
 
 func (c *repositoryClient) ListSignatures(ctx context.Context, desc ocispec.Descriptor, fn func(signatureManifests []ocispec.Descriptor) error) error {
+	fmt.Println("NotationRepository.ListSignatures BEGIN", "DESC", desc)
 	referrers, err := remote.Referrers(c.ref.Context().Digest(desc.Digest.String()), c.remoteOpts...)
 	if err != nil {
 		return err
@@ -54,10 +57,12 @@ func (c *repositoryClient) ListSignatures(ctx context.Context, desc ocispec.Desc
 		}
 	}
 
+	fmt.Println("NotationRepository.ListSignatures END", "DESCLIST", descList)
 	return fn(descList)
 }
 
 func (c *repositoryClient) FetchSignatureBlob(ctx context.Context, desc ocispec.Descriptor) ([]byte, ocispec.Descriptor, error) {
+	fmt.Println("NotationRepository.FetchSignatureBlob BEGIN", "DESC", desc)
 	manifestRef := c.getReferenceFromDescriptor(desc)
 
 	manifestBytes, err := crane.Manifest(manifestRef)
@@ -88,6 +93,7 @@ func (c *repositoryClient) FetchSignatureBlob(ctx context.Context, desc ocispec.
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("NotationRepository.FetchSignatureBlob END", "MANIFEST", manifestDesc, "SIGNATURE", SigBlobBuf.Bytes())
 	return SigBlobBuf.Bytes(), manifestDesc, nil
 }
 
